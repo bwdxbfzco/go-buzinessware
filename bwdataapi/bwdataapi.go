@@ -8,7 +8,7 @@ import (
 	validator "github.com/go-playground/validator/v10"
 )
 
-var reqUrl = "https://api.buzinessware.com/"
+var reqUrl = "https://api.buzinessware.com"
 
 func PostRequest(request []byte, path string, method string, username string, password string) (*http.Response, error) {
 	var resp *http.Response
