@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/bwdxbfzco/go-buzinessware"
 )
 
 type Sendinblue struct {
