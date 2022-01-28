@@ -4,9 +4,6 @@ import (
 	"fmt"
 )
 
-type Bwdataapi struct {
-}
-
-func (m Bwdataapi) Hello() {
+func Hello() {
 	fmt.Println("Hello")
 }
