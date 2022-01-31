@@ -2,6 +2,7 @@ package openstack
 
 import (
 	"errors"
+	"log"
 
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
@@ -31,7 +32,7 @@ func CreateServerSnapShot(params map[string]string) (string, error) {
 	return imageId, nil
 }
 
-func DeleteServerSnapshot(params map[string]string) gophercloud.ErrResult {
+func DeleteServerSnapshot(params map[string]string) error {
 	provider, err := auth(params["username"], params["password"], params["project"], params["endpoint"])
 	client, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
 		Region: "RegionOne",
@@ -42,7 +43,8 @@ func DeleteServerSnapshot(params map[string]string) gophercloud.ErrResult {
 	}
 
 	res := images.Delete(client, params["imageId"])
-	return res
+	log.Println(res)
+	return nil
 }
 
 func CreateVolumeSnapshot() {
