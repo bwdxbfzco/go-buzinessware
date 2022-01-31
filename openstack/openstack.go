@@ -47,7 +47,7 @@ func DeleteServerSnapshot(params map[string]string) error {
 	return nil
 }
 
-func ListServerSnapshotDetails(params map[string]string) (images.Image, error) {
+func ListServerSnapshotDetails(params map[string]string) (*images.Image, error) {
 	imageDetails := images.Image
 
 	provider, err := auth(params["username"], params["password"], params["project"], params["endpoint"])
@@ -65,7 +65,7 @@ func ListServerSnapshotDetails(params map[string]string) (images.Image, error) {
 		return imageDetails, err
 	}
 
-	return imageDetails, nil
+	return &imageDetails, nil
 }
 
 func CreateVolumeSnapshot() {
