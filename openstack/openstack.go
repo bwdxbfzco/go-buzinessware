@@ -47,7 +47,7 @@ func DeleteServerSnapshot(params map[string]string) error {
 	return nil
 }
 
-func ListServerSnapshotDetails(params map[string]string) (*images.Image, error) {
+func ListServerSnapshotDetails(params map[string]string) (*Image, error) {
 	imageDetails := images.Image
 
 	provider, err := auth(params["username"], params["password"], params["project"], params["endpoint"])
