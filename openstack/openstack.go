@@ -41,7 +41,7 @@ func DeleteServerSnapshot(params map[string]string) gophercloud.ErrResult {
 		return err
 	}
 
-	res := images.Delete(client, imageId)
+	res := images.Delete(client, params["imageId"])
 	return res
 }
 
@@ -50,7 +50,7 @@ func CreateVolumeSnapshot() {
 }
 
 func DeleteVolumeSnapshot() {
-	
+
 }
 
 func auth(_username string, _password string, _project string, _endPoint string) (*gophercloud.ProviderClient, error) {
