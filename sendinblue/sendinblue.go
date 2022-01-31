@@ -11,9 +11,19 @@ type Sendinblue struct {
 	MessageId  string `json:"messageId"`  //
 }
 
-var reqUrl = "https://api.sendinblue.com/v3/smtp/email"
+type SibContact struct {
+	Email         string `json:"email"`         //
+	Firstname     string `json:"firstname"`     //
+	Lastname      string `json:"lastname"`      //
+	ListId        []int  `json:"listId"`        //
+	UpdateEnabled bool   `json:"updateEnabled"` //
 
-func Sendmail(request []byte, apiKey string) (Sendinblue, error) {
+}
+
+var reqUrl = "https://api.sendinblue.com/v3/smtp/email"
+var apiUrl = "https://api.sendinblue.com/v3/"
+
+func Sendmail(request []byte, apiKey string, path string) (Sendinblue, error) {
 	var t Sendinblue
 	method := "POST"
 	client := &http.Client{}
@@ -44,4 +54,9 @@ func Sendmail(request []byte, apiKey string) (Sendinblue, error) {
 	resp.Body.Close()
 
 	return t, nil
+}
+
+func Contacts(params SibContact, key string) (int, error) {
+
+	return 201, nil
 }
