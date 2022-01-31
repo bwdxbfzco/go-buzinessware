@@ -47,6 +47,27 @@ func DeleteServerSnapshot(params map[string]string) error {
 	return nil
 }
 
+func ListServerSnapshotDetails(params map[string]string) (images.Image, error) {
+	imageDetails := images.Image
+
+	provider, err := auth(params["username"], params["password"], params["project"], params["endpoint"])
+	client, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
+		Region: "RegionOne",
+	})
+
+	if err != nil {
+		return imageDetails, err
+	}
+
+	imageDetails, err = images.Get(client, params["imageId"]).Extract()
+
+	if err != nil {
+		return imageDetails, err
+	}
+
+	return imageDetails, nil
+}
+
 func CreateVolumeSnapshot() {
 
 }
