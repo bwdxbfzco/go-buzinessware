@@ -23,7 +23,7 @@ type SibContact struct {
 var reqUrl = "https://api.sendinblue.com/v3/smtp/email"
 var apiUrl = "https://api.sendinblue.com/v3/"
 
-func Sendmail(request []byte, apiKey string, path string) (Sendinblue, error) {
+func Sendmail(request []byte, apiKey string) (Sendinblue, error) {
 	var t Sendinblue
 	method := "POST"
 	client := &http.Client{}
