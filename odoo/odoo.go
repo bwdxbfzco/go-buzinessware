@@ -3,6 +3,7 @@ package odoo
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -11,8 +12,10 @@ import (
 	validator "github.com/go-playground/validator/v10"
 )
 
-const odooUrl = "https://buzinessware-staging-3962576.dev.odoo.com/api"
-const odooAPI = "KFVY8S8Y5XV575GD7UP4XU85EINFEKEM"
+type OdooDetails struct {
+	OdooUrl string `json:"odooUrl"` //
+	OdooAPI string `json:"odooAPI"` //
+}
 
 type InvoiceItems struct {
 	ProductID        int     `json:"product_id" validate:"required"`         //
@@ -23,7 +26,7 @@ type InvoiceItems struct {
 	TermName         string  `json:"term_name" validate:"required"`          //
 	DateStartingg    string  `json:"date_startingg" validate:"required"`     //
 	DateEndingg      string  `json:"date_endingg"`                           //
-	TaxIds           []int   `json:"tax_ids"`                                //
+	TaxIds           []int   `json:"tax_ids,omitempty"`                      //
 	OrderTypee       string  `json:"order_typee" validate:"required"`        //
 	ProductGroupName int     `json:"product_group_name" validate:"required"` //
 	BusinessUnit     string  `json:"business_unit" validate:"required"`      //
@@ -62,14 +65,15 @@ type Odoocreatecontact struct {
 	Emailaddress string `json:"emailaddress,omitempty"`
 }
 
-type Odooresponse struct {
+type OdooResponse struct {
 	Success      bool   `json:"success,omitempty"`
 	Message      string `json:"message,omitempty"`
 	ResponseCode int    `json:"responseCode,omitempty"`
 	CreateID     int    `json:"create_id,omitempty"`
 	Data         []struct {
-		ID   int    `json:"id,omitempty"`   //
-		Name string `json:"name,omitempty"` //
+		ID    int    `json:"id,omitempty"`    //
+		Name  string `json:"name,omitempty"`  //
+		State string `json:"state,omitempty"` //
 	} `json:"data,omitempty"`
 }
 
@@ -83,7 +87,7 @@ type Contact struct {
 	CustomerType    string `json:"x_studio_customer_segment" validate:"required"` //
 }
 
-func Search(object string, field string, search string, filter string) (Odooresponse, error) {
+func Search(object string, field string, search string, filter string, odooDetails *OdooDetails) (OdooResponse, error) {
 	values := []byte(`{}`)
 	params := url.Values{}
 	var a string
@@ -96,18 +100,18 @@ func Search(object string, field string, search string, filter string) (Odooresp
 		a = params.Encode()
 	}
 
-	reqUrl := odooUrl + "/" + object + "/search?" + a
+	reqUrl := odooDetails.OdooUrl + "/" + object + "/search?" + a
 
-	log.Println(reqUrl)
 	method := "GET"
 
-	return odooApiCall(values, reqUrl, method)
+	return odooApiCall(values, reqUrl, method, odooDetails)
 }
 
-func odooApiCall(request []byte, reqUrl string, method string) (Odooresponse, error) {
-	var t Odooresponse
+func odooApiCall(request []byte, reqUrl string, method string, odooDetails *OdooDetails) (OdooResponse, error) {
+	var t OdooResponse
 	client := &http.Client{}
 
+	log.Printf("%s", request)
 	req, err := http.NewRequest(method, reqUrl, bytes.NewBuffer(request))
 	if method == "GET" {
 		req, err = http.NewRequest(method, reqUrl, nil)
@@ -115,7 +119,7 @@ func odooApiCall(request []byte, reqUrl string, method string) (Odooresponse, er
 			return t, err
 		}
 	}
-	req.Header.Add("api-key", odooAPI)
+	req.Header.Add("api-key", odooDetails.OdooAPI)
 
 	if method == "POST" {
 		req.Header.Add("Content-type", "text/plain")
@@ -143,8 +147,8 @@ func odooApiCall(request []byte, reqUrl string, method string) (Odooresponse, er
 	return t, nil
 }
 
-func CreateCustomer(_customerRequest Contact) (Odooresponse, error) {
-	var t Odooresponse
+func CreateCustomer(_customerRequest Contact, odooDetails *OdooDetails) (OdooResponse, error) {
+	var t OdooResponse
 	validate := validator.New()
 	err := validate.Struct(&_customerRequest)
 
@@ -153,15 +157,15 @@ func CreateCustomer(_customerRequest Contact) (Odooresponse, error) {
 	}
 
 	values, _ := json.Marshal(_customerRequest)
-	reqUrl := odooUrl + "/res.partner/create"
+	reqUrl := odooDetails.OdooUrl + "/res.partner/create"
 
 	method := "POST"
-	t, err = odooApiCall(values, reqUrl, method)
+	t, err = odooApiCall(values, reqUrl, method, odooDetails)
 
 	return t, err
 }
 
-func CreateInvoice(_invoiceRequest Invoice) (Odooresponse, error) {
+func CreateInvoice(_invoiceRequest Invoice, odooDetails *OdooDetails) (OdooResponse, error) {
 	if _invoiceRequest.MoveType == "" {
 		_invoiceRequest.MoveType = "out_invoice"
 	}
@@ -172,7 +176,7 @@ func CreateInvoice(_invoiceRequest Invoice) (Odooresponse, error) {
 		_invoiceRequest.ExtractState = "no_extract_requested"
 	}
 
-	var t Odooresponse
+	var t OdooResponse
 	validate := validator.New()
 	err := validate.Struct(&_invoiceRequest)
 
@@ -181,51 +185,43 @@ func CreateInvoice(_invoiceRequest Invoice) (Odooresponse, error) {
 	}
 
 	values, _ := json.Marshal(_invoiceRequest)
-	reqUrl := odooUrl + "/account.move/create"
+	reqUrl := odooDetails.OdooUrl + "/account.move/create"
 
 	method := "POST"
-	t, err = odooApiCall(values, reqUrl, method)
-
-	/*	//update the created invoice from draft to posted
-		valuesPut := []byte(`{
-			"state": "posted"
-		}`)
-		//invoiceid, _ := conv.String(t.CreateID)
-		//reqUrl = odooUrl + "/account.move/" + invoiceid
-		reqUrl = odooUrl + "/account.move/create"
-
-		log.Println(reqUrl)
-		method = "POST"
-		t, err = odooApiCall(valuesPut, reqUrl, method)*/
+	t, err = odooApiCall(values, reqUrl, method, odooDetails)
 
 	return t, err
 }
 
-func DeleteRecord(id int, object string) (Odooresponse, error) {
+func DeleteRecord(id int, object string, odooDetails *OdooDetails) (OdooResponse, error) {
 	_id, _ := conv.String(id)
 	values := []byte(`{}`)
-	reqUrl := odooUrl + "/" + object + "/" + _id
+	reqUrl := odooDetails.OdooUrl + "/" + object + "/" + _id
 
 	method := "DELETE"
-	t, err := odooApiCall(values, reqUrl, method)
+	t, err := odooApiCall(values, reqUrl, method, odooDetails)
 
 	return t, err
 }
 
-func UpdateRecord(id int, values []byte, object string) (Odooresponse, error) {
+func UpdateRecord(id int, values []byte, object string, odooDetails *OdooDetails) (OdooResponse, error) {
 	_id, _ := conv.String(id)
-	reqUrl := odooUrl + "/" + object + "/" + _id
+	reqUrl := odooDetails.OdooUrl + "/" + object + "/" + _id
 
 	method := "PUT"
-	t, err := odooApiCall(values, reqUrl, method)
+	t, err := odooApiCall(values, reqUrl, method, odooDetails)
 	return t, err
 }
 
-func CreateRecord(values []byte, object string) (Odooresponse, error) {
+func CreateRecord(values []byte, object string, odooDetails *OdooDetails) (OdooResponse, error) {
 	method := "POST"
-	reqUrl := odooUrl + "/" + object + "/create"
+	reqUrl := odooDetails.OdooUrl + "/" + object + "/create"
 
-	t, err := odooApiCall(values, reqUrl, method)
+	t, err := odooApiCall(values, reqUrl, method, odooDetails)
 
 	return t, err
+}
+
+func OdooTest(odooDetails *OdooDetails) {
+	fmt.Printf("%s", odooDetails)
 }
