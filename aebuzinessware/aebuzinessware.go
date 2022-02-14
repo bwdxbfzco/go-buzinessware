@@ -39,21 +39,21 @@ type DomainResponse struct {
 }
 
 type ContactResponse struct {
-	ContactID          string      `json:"ContactId"`
-	ContactEmail       string      `json:"ContactEmail"`
-	ContactClientID    string      `json:"ContactClientId"`
-	ContactCreateDate  time.Time   `json:"ContactCreateDate"`
-	ContactUpdateDate  time.Time   `json:"ContactUpdateDate"`
-	ContactStatus      []string    `json:"ContactStatus"`
-	ContactVoice       string      `json:"ContactVoice"`
-	ContactFax         interface{} `json:"ContactFax"`
-	ContactName        string      `json:"ContactName"`
-	ContactStreet      interface{} `json:"ContactStreet"`
-	ContactCity        string      `json:"ContactCity"`
-	ContactZipcode     interface{} `json:"ContactZipcode"`
-	ContactProvince    string      `json:"ContactProvince"`
-	ContactCountrycode string      `json:"ContactCountrycode"`
-	ContactCompanyname string      `json:"ContactCompanyname"`
+	ContactID          string    `json:"ContactId"`
+	ContactEmail       string    `json:"ContactEmail"`
+	ContactClientID    string    `json:"ContactClientId"`
+	ContactCreateDate  time.Time `json:"ContactCreateDate"`
+	ContactUpdateDate  time.Time `json:"ContactUpdateDate"`
+	ContactStatus      []string  `json:"ContactStatus"`
+	ContactVoice       string    `json:"ContactVoice"`
+	ContactFax         string    `json:"ContactFax"`
+	ContactName        string    `json:"ContactName"`
+	ContactStreet      string    `json:"ContactStreet"`
+	ContactCity        string    `json:"ContactCity"`
+	ContactZipcode     string    `json:"ContactZipcode"`
+	ContactProvince    string    `json:"ContactProvince"`
+	ContactCountrycode string    `json:"ContactCountrycode"`
+	ContactCompanyname string    `json:"ContactCompanyname"`
 }
 
 type Nameserver struct {
@@ -178,13 +178,16 @@ func (c AEDomain) UpdateDomain(contactId string, domainName string, contactType 
 	contacts := make(map[string]string)
 	params := url.Values{}
 	if strings.ToLower(contactType) == "registrant" {
-		contacts["type"] = "CONTACT_TYPE_REG"
+		contacts["type"] = "CONTACT_TYPE_REGISTRANT"
 	}
 	if strings.ToLower(contactType) == "admin" {
 		contacts["type"] = "CONTACT_TYPE_ADMIN"
 	}
-	if strings.ToLower(contactType) == "technical" {
+	if strings.ToLower(contactType) == "technical" || strings.ToLower(contactType) == "tech" {
 		contacts["type"] = "CONTACT_TYPE_TECH"
+	}
+	if strings.ToLower(contactType) == "billing" {
+		contacts["type"] = "CONTACT_TYPE_BILLING"
 	}
 	//Get Domain Info
 	_domInfo, err := c.DomainDetails(domainName)
@@ -194,10 +197,12 @@ func (c AEDomain) UpdateDomain(contactId string, domainName string, contactType 
 
 	for _, x := range _domInfo.DomainResponse.ContactInfo {
 		_split := strings.Split(strings.TrimSpace(x.(interface{}).(string)), ":")
-		if _split[0] == "tech" && contactType == "technical" {
-			contacts["remContactId"] = _split[1]
+		if _split[0] == "tech" && (contactType == "technical" || contactType == "tech") {
+			contacts["remContactId"] = strings.TrimSpace(_split[1])
 		} else if _split[0] == "admin" && contactType == "admin" {
-			contacts["remContactId"] = _split[1]
+			contacts["remContactId"] = strings.TrimSpace(_split[1])
+		} else if _split[0] == "billing" && contactType == "billing" {
+			contacts["remContactId"] = strings.TrimSpace(_split[1])
 		}
 	}
 
@@ -213,6 +218,7 @@ func (c AEDomain) UpdateDomain(contactId string, domainName string, contactType 
 	params.Set("domain", domainName)
 	params.Set("data", string(_contact))
 
+	log.Printf("%s", params)
 	result, err := c.apiCall(params, "updatedomain")
 	return result, err
 }
