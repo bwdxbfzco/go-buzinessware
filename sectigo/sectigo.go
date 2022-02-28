@@ -8,11 +8,13 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -201,11 +203,16 @@ func (a SectigoSSL) apiCall(request url.Values, postUri string) (url.Values, err
 	if resp.StatusCode == 200 {
 		decodeCSRResponse, _ := ioutil.ReadAll(resp.Body)
 		if postUri != "download/CollectSSL" {
-			a, err := url.ParseQuery(string(decodeCSRResponse))
+			result, err := url.ParseQuery(string(decodeCSRResponse))
 			if err != nil {
 				return url.Values{}, err
 			}
-			return a, nil
+			_statusCode := strings.Join(result["errorCode"], "")
+			_errMessage := strings.Join(result["errorMessage"], "")
+			if _statusCode != "0" {
+				return url.Values{}, errors.New(_errMessage)
+			}
+			return result, nil
 		} else {
 			r := make(url.Values)
 			s := string(decodeCSRResponse)
