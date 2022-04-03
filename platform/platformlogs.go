@@ -17,15 +17,14 @@ type PlatformLogs struct {
 }
 
 type HistoryLogs struct {
-	ID        primitive.ObjectID `bson:"_id" json:"ID"`                //
-	Userid    int                `bson:"userid" json:"Userid"`         //
-	Country   string             `bson:"country" json:"Country"`       //
-	Message   string             `bson:"message" json:"Message"`       //
-	IPAddress string             `bson:"IPAddress" json:"IPAddress"`   //
-	CreatedAt time.Time          `bson:"created_at" json:"created_at"` //
-}
-
-type ServiceLogs struct {
+	ID        primitive.ObjectID `bson:"_id" json:"ID"`                        //
+	Userid    int                `bson:"userid" json:"userid"`                 //
+	Serviceid int                `bson:"serviceid" json:"serviceid,omitempty"` //
+	Country   string             `bson:"country" json:"country"`               //
+	Message   string             `bson:"message" json:"type"`                  //
+	IPAddress string             `bson:"ipaddress" json:"ipaddress"`           //
+	CreatedAt time.Time          `bson:"created_at" json:"date"`               //
+	Tag       string             `bson:"tag" json:"tag"`                       //
 }
 
 var collection *mongo.Collection
@@ -57,9 +56,11 @@ func (a PlatformLogs) InsertRecord(history *HistoryLogs) error {
 func (a PlatformLogs) ListRecords(filters interface{}) ([]*HistoryLogs, error) {
 	a.connection()
 	var history []*HistoryLogs
-	filter := bson.D{{}}
+	//filter := bson.D{{}}
 
-	cur, err := collection.Find(ctx, filter)
+	opts := options.Find().SetSort(bson.D{{"created_at", -1}})
+
+	cur, err := collection.Find(ctx, filters, opts)
 	if err != nil {
 		return history, err
 	}
