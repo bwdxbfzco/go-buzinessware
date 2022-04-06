@@ -10,7 +10,11 @@ import (
 
 var reqUrl = "https://api.buzinessware.com"
 
-func PostRequest(request []byte, path string, method string, username string, password string) (*http.Response, error) {
+type BWDataApi struct {
+	Url string `json:"url"`
+}
+
+func (a BWDataApi) PostRequest(request []byte, path string, method string, username string, password string) (*http.Response, error) {
 	var resp *http.Response
 
 	//Validation
@@ -37,7 +41,7 @@ func PostRequest(request []byte, path string, method string, username string, pa
 
 	client := &http.Client{}
 
-	reqUrl = reqUrl + path
+	reqUrl = a.Url + path
 
 	req, err := http.NewRequest(method, reqUrl, bytes.NewBuffer(request))
 	req.Header.Add("Content-type", "application/json")
@@ -50,7 +54,6 @@ func PostRequest(request []byte, path string, method string, username string, pa
 	if err != nil {
 		return resp, err
 	}
-	defer resp.Body.Close()
 
 	return resp, nil
 }

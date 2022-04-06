@@ -8,9 +8,13 @@ import (
 	validator "github.com/go-playground/validator/v10"
 )
 
-var reqUrl = "http://queue.buzinessware.com:9001"
+var reqUrl = "http://bwapi.buzinessware.com:9003"
 
-func PostRequest(request []byte, path string, method string, username string, password string) (*http.Response, error) {
+type BWApi struct {
+	Url string `json:"url"`
+}
+
+func (a BWApi) PostRequest(request []byte, path string, method string, username string, password string) (*http.Response, error) {
 	var resp *http.Response
 
 	//Validation
@@ -37,7 +41,7 @@ func PostRequest(request []byte, path string, method string, username string, pa
 
 	client := &http.Client{}
 
-	reqUrl = reqUrl + path
+	reqUrl = a.Url + path
 
 	req, err := http.NewRequest(method, reqUrl, bytes.NewBuffer(request))
 	req.Header.Add("Content-type", "application/json")
@@ -49,7 +53,6 @@ func PostRequest(request []byte, path string, method string, username string, pa
 	if err != nil {
 		return resp, err
 	}
-	defer resp.Body.Close()
 
 	return resp, nil
 }

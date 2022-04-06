@@ -3,6 +3,7 @@ package openstack
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -12,11 +13,17 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/blockstorage/v2/snapshots"
+	"github.com/gophercloud/gophercloud/openstack/blockstorage/v2/volumes"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/bootfromvolume"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/flavors"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/images"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
+	"github.com/gophercloud/gophercloud/openstack/identity/v2/tenants"
+	"github.com/gophercloud/gophercloud/openstack/identity/v2/users"
 	imageservices "github.com/gophercloud/gophercloud/openstack/imageservice/v2/images"
+	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/networkipavailabilities"
+	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/groups"
+	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/rules"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/ports"
 	"github.com/gophercloud/gophercloud/pagination"
 )
@@ -222,6 +229,74 @@ func DeleteVolumeSnapshot(authCredential OpenstackAuth, snapShotId string) error
 		return res.Err
 	}
 	return nil
+}
+
+/*
+List of Volumes
+*/
+func ListVolumes(authCredentials OpenstackAuth) ([]volumes.Volume, error) {
+	result1 := []volumes.Volume{}
+	provider, errProvider := auth(authCredentials)
+	if errProvider != nil {
+		return result1, errProvider
+	}
+
+	client, err1 := openstack.NewBlockStorageV2(provider, gophercloud.EndpointOpts{
+		Region: "RegionOne",
+	})
+
+	if err1 != nil {
+		return result1, err1
+	}
+
+	opt := volumes.ListOpts{}
+
+	allPages, err := volumes.List(client, opt).AllPages()
+
+	if err != nil {
+		return result1, err
+	}
+
+	result1, err = volumes.ExtractVolumes(allPages)
+
+	if err != nil {
+		return result1, err
+	}
+
+	return result1, nil
+}
+
+/*
+List Snapshots
+*/
+func ListSnapshots(authCredentials OpenstackAuth) ([]snapshots.Snapshot, error) {
+	var result1 []snapshots.Snapshot
+	provider, errProvider := auth(authCredentials)
+
+	if errProvider != nil {
+		return result1, errProvider
+	}
+
+	client, errClient := openstack.NewBlockStorageV2(provider, gophercloud.EndpointOpts{
+		Region: "RegionOne",
+	})
+
+	if errClient != nil {
+		return result1, errClient
+	}
+
+	opt := snapshots.ListOpts{}
+
+	err := snapshots.List(client, opt).EachPage(func(page pagination.Page) (bool, error) {
+		result1, _ = snapshots.ExtractSnapshots(page)
+		return true, nil
+	})
+
+	if err != nil {
+		return result1, err
+	}
+
+	return result1, nil
 }
 
 /*
@@ -470,7 +545,7 @@ func CreateServerFromImage(authCredentials OpenstackAuth, region string, params 
 
 	var _sg1 []string
 	var _block1 []bootfromvolume.BlockDevice
-	_userdata := []byte(params["password"])
+	_userdata := []byte(params["userdata"])
 	_metadata := make(map[string]string)
 	_net1 := []servers.Network{}
 	_net := servers.Network{}
@@ -546,12 +621,49 @@ func DeleteServer(authCredentials OpenstackAuth, id string) error {
 }
 
 /*
+List All Servers Under Tenant
+*/
+func ListServers(authCredentials OpenstackAuth) ([]servers.Server, error) {
+	result1 := []servers.Server{}
+	provider, errProvider := auth(authCredentials)
+
+	if errProvider != nil {
+		return result1, errProvider
+	}
+
+	client, err1 := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
+		Region: "RegionOne",
+	})
+
+	if err1 != nil {
+		return result1, err1
+	}
+
+	opt := servers.ListOpts{}
+
+	err := servers.List(client, opt).EachPage(func(page pagination.Page) (bool, error) {
+		result1, _ = servers.ExtractServers(page)
+		return true, nil
+	})
+
+	if err != nil {
+		return result1, err
+	}
+
+	return result1, nil
+}
+
+/*
 Server Info
 */
 
 func ServerDetails(authCredentials OpenstackAuth, serverId string) (*servers.Server, error) {
 	var _serverInfo *servers.Server
-	provider, _ := auth(authCredentials)
+	provider, errProvider := auth(authCredentials)
+
+	if errProvider != nil {
+		return _serverInfo, errProvider
+	}
 	client, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
 		Region: "RegionOne",
 	})
@@ -571,12 +683,84 @@ func ServerDetails(authCredentials OpenstackAuth, serverId string) (*servers.Ser
 }
 
 /*
+Server Resize
+*/
+
+func ServerResize(authCredentials OpenstackAuth, params map[string]interface{}) error {
+	var result error
+
+	provider, errProvider := auth(authCredentials)
+
+	if errProvider != nil {
+		return errProvider
+	}
+	client, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
+		Region: "RegionOne",
+	})
+
+	if err != nil {
+		return result
+	}
+
+	validate := validator.New()
+	errVal := validate.Var(params["flavor"], "required")
+
+	if errVal != nil {
+		return errVal
+	}
+
+	opt := servers.ResizeOpts{
+		FlavorRef: params["flavor"].(string),
+	}
+
+	res := servers.Resize(client, fmt.Sprint(params["serverId"]), opt)
+
+	if res.Err != nil {
+		return res.Err
+	}
+
+	return result
+}
+
+/*
+Server Resize Confirm
+*/
+func ServerResizeConfirm(authCredentials OpenstackAuth, params map[string]interface{}) error {
+	var result error
+
+	provider, errProvider := auth(authCredentials)
+
+	if errProvider != nil {
+		return errProvider
+	}
+	client, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
+		Region: "RegionOne",
+	})
+
+	if err != nil {
+		return err
+	}
+
+	res := servers.ConfirmResize(client, fmt.Sprint(params["serverId"]))
+
+	if res.Err != nil {
+		return res.Err
+	}
+
+	return result
+}
+
+/*
 List OS Images
 */
 func ListOSImages(authCredentials OpenstackAuth) ([]map[string]interface{}, error) {
 	result1 := []map[string]interface{}{}
 
-	provider, _ := auth(authCredentials)
+	provider, errProvider := auth(authCredentials)
+
+	if errProvider != nil {
+		return result1, errProvider
+	}
 	client, err := openstack.NewImageServiceV2(provider, gophercloud.EndpointOpts{
 		Region: "RegionOne",
 	})
@@ -606,7 +790,11 @@ List OS Flavors
 func ListOSFlavors(authCredentials OpenstackAuth) ([]map[string]interface{}, error) {
 	result1 := []map[string]interface{}{}
 
-	provider, _ := auth(authCredentials)
+	provider, errProvider := auth(authCredentials)
+
+	if errProvider != nil {
+		return result1, errProvider
+	}
 	client, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
 		Region: "RegionOne",
 	})
@@ -630,4 +818,172 @@ func ListOSFlavors(authCredentials OpenstackAuth) ([]map[string]interface{}, err
 	})
 
 	return result1, err
+}
+
+/*
+Network IP Availability
+*/
+func NetworkIPAvailability(authCredentials OpenstackAuth, networkId string) (map[string]interface{}, error) {
+	result1 := map[string]interface{}{}
+
+	provider, errProvider := auth(authCredentials)
+
+	if errProvider != nil {
+		return result1, errProvider
+	}
+	client, err := openstack.NewNetworkV2(provider, gophercloud.EndpointOpts{
+		Region: "RegionOne",
+	})
+
+	s, err := networkipavailabilities.Get(client, networkId).Extract()
+
+	if err != nil {
+		return result1, err
+	}
+
+	result1["networkID"] = s.NetworkID
+	result1["totalIPs"] = s.TotalIPs
+	result1["usedIPs"] = s.UsedIPs
+
+	return result1, nil
+}
+
+/*
+Get List of Users
+*/
+func ListUsers(authCredentials OpenstackAuth) ([]map[string]interface{}, error) {
+	result1 := []map[string]interface{}{}
+	provider, errProvider := auth(authCredentials)
+
+	if errProvider != nil {
+		return result1, errProvider
+	}
+	client, err1 := openstack.NewIdentityV2(provider, gophercloud.EndpointOpts{
+		Region: "RegionOne",
+	})
+
+	if err1 != nil {
+		return result1, err1
+	}
+
+	client.Endpoint = strings.Replace(client.Endpoint, "5000", "35357", 1)
+
+	err := users.List(client).EachPage(func(page pagination.Page) (bool, error) {
+		actual, _ := users.ExtractUsers(page)
+		for _, a := range actual {
+			result := make(map[string]interface{})
+			result["ID"] = a.ID
+			result["Name"] = a.Name
+			result1 = append(result1, result)
+		}
+		return true, nil
+	})
+
+	if err != nil {
+		return result1, err
+	}
+
+	return result1, nil
+}
+
+/*
+Get List of Tenants
+*/
+func ListTenants(authCredentials OpenstackAuth) ([]map[string]interface{}, error) {
+	result1 := []map[string]interface{}{}
+	provider, errProvider := auth(authCredentials)
+
+	if errProvider != nil {
+		return result1, errProvider
+	}
+	client, err1 := openstack.NewIdentityV2(provider, gophercloud.EndpointOpts{
+		Region: "RegionOne",
+	})
+
+	if err1 != nil {
+		return result1, err1
+	}
+
+	client.Endpoint = strings.Replace(client.Endpoint, "5000", "35357", 1)
+
+	err := tenants.List(client, nil).EachPage(func(page pagination.Page) (bool, error) {
+		actual, _ := tenants.ExtractTenants(page)
+		for _, a := range actual {
+			result := make(map[string]interface{})
+			result["ID"] = a.ID
+			result["Name"] = a.Name
+			result1 = append(result1, result)
+		}
+		return true, nil
+	})
+
+	if err != nil {
+		return result1, err
+	}
+
+	return result1, nil
+}
+
+/*
+Get List of Security Groups
+*/
+func ListSecurityGroups(authCredentials OpenstackAuth) ([]groups.SecGroup, error) {
+	var result1 []groups.SecGroup
+	provider, errProvider := auth(authCredentials)
+
+	if errProvider != nil {
+		return result1, errProvider
+	}
+	client, err1 := openstack.NewNetworkV2(provider, gophercloud.EndpointOpts{
+		Region: "RegionOne",
+	})
+
+	if err1 != nil {
+		return result1, err1
+	}
+
+	opt := groups.ListOpts{}
+	pager := groups.List(client, opt)
+	err := pager.EachPage(func(page pagination.Page) (bool, error) {
+		result1, _ = groups.ExtractGroups(page)
+		return true, nil
+	})
+
+	if err != nil {
+		return result1, err
+	}
+
+	return result1, nil
+}
+
+/*
+Get List of Security Rules
+*/
+func ListSecurityRules(authCredentials OpenstackAuth) ([]rules.SecGroupRule, error) {
+	var result1 []rules.SecGroupRule
+	provider, errProvider := auth(authCredentials)
+
+	if errProvider != nil {
+		return result1, errProvider
+	}
+	client, err1 := openstack.NewNetworkV2(provider, gophercloud.EndpointOpts{
+		Region: "RegionOne",
+	})
+
+	if err1 != nil {
+		return result1, err1
+	}
+
+	opt := rules.ListOpts{}
+	pager := rules.List(client, opt)
+	err := pager.EachPage(func(page pagination.Page) (bool, error) {
+		result1, _ = rules.ExtractRules(page)
+		return true, nil
+	})
+
+	if err != nil {
+		return result1, err
+	}
+
+	return result1, nil
 }
