@@ -29,16 +29,6 @@ func (a BWDataApi) PostRequest(request []byte, path string, method string, usern
 		return resp, errors.New("Method not provided")
 	}
 
-	err = validate.Var(username, "required")
-	if err != nil {
-		return resp, errors.New("Username not provided")
-	}
-
-	err = validate.Var(password, "required")
-	if err != nil {
-		return resp, errors.New("Password not provided")
-	}
-
 	client := &http.Client{}
 
 	reqUrl = a.Url + path
@@ -46,7 +36,9 @@ func (a BWDataApi) PostRequest(request []byte, path string, method string, usern
 	req, err := http.NewRequest(method, reqUrl, bytes.NewBuffer(request))
 	req.Header.Add("Content-type", "application/json")
 	req.Header.Add("Accept", "application/json")
-	req.SetBasicAuth(username, password)
+	if username != "" && password != "" {
+		req.SetBasicAuth(username, password)
+	}
 
 	resp, err = client.Do(req)
 

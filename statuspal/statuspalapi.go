@@ -3,7 +3,10 @@ package statuspal
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/davecgh/go-spew/spew"
 )
@@ -13,23 +16,25 @@ const subDomain = "buzinessware-com"
 
 type StatuspalAPI struct {
 	ApiKey string `json:"apiKey"`
+	Offset int    `json:"offset"`
+	Limit  int    `json:"limit"`
 }
 
 type Subscription struct {
-	ServiceIds   []int  `json:"service_ids"`             //
+	ServiceIds   []int  `json:"service_ids,omitempty"`   //
 	SMSEnabled   bool   `json:"sms_enabled,omitempty"`   //
-	Type         string `json:"type"`                    //
-	Email        string `json:"email"`                   //
+	Type         string `json:"type,omitempty"`          //
+	Email        string `json:"email,omitempty"`         //
 	PhoneNumber  string `json:"phone_number,omitempty"`  //
 	EmailEnabled bool   `json:"email_enabled,omitempty"` //
 	Id           string `json:"id,omitempty"`            //
-	Confirm      bool   `json:"confirm"`                 //
+	Confirm      bool   `json:"confirm,omitempty"`       //
 	Filter       string `json:"filter,omitempty"`        //
 }
 
 type Subscriptions struct {
-	Subscriptions []Subscription         `json:"subscriptions"`  //
-	Meta          map[string]interface{} `json:"meta,omitempty"` //
+	Subscriptions []Subscription         `json:"subscriptions,omitempty"` //
+	Meta          map[string]interface{} `json:"meta,omitempty"`          //
 }
 
 type Children struct {
@@ -129,7 +134,11 @@ func (s StatuspalAPI) apiCall(request []byte, path string, method string) (Statu
 
 	reqUrl := apiUrl + "status_pages/" + subDomain + "/" + path
 
-	//log.Println(reqUrl)
+	if path == "subscriptions" {
+		reqUrl = reqUrl + "?limit=" + strconv.Itoa(s.Limit)
+	}
+
+	log.Println(reqUrl)
 	req, err := http.NewRequest(method, reqUrl, bytes.NewBuffer(request))
 	req.Header.Add("Authorization", s.ApiKey)
 	req.Header.Add("Content-type", "application/json")
@@ -143,10 +152,7 @@ func (s StatuspalAPI) apiCall(request []byte, path string, method string) (Statu
 	}
 	defer resp.Body.Close()
 
-	/*	var i interface{}
-		b := json.NewDecoder(resp.Body)
-		b.Decode(&i)
-		spew.Dump(i)*/
+	log.Println(resp.StatusCode)
 
 	if resp.StatusCode == 200 {
 		if path == "subscriptions" {
@@ -182,6 +188,12 @@ func (s StatuspalAPI) apiCall(request []byte, path string, method string) (Statu
 	} else if resp.StatusCode == 204 {
 		_result.StatusCode = resp.StatusCode
 		_result.Message = "Subscription deleted successfully"
+	} else {
+		var i interface{}
+		b := json.NewDecoder(resp.Body)
+		b.Decode(&i)
+		_result.StatusCode = resp.StatusCode
+		_result.Message = fmt.Sprint(i.(map[string]interface{})["errors"].(map[string]interface{})["email_hash_tmp"])
 	}
 
 	return _result, nil

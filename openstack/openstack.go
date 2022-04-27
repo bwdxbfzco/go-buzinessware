@@ -61,6 +61,16 @@ type OpenstackAuth struct {
 	EndPoint string `json:"endPoint" validate:"required"` //
 }
 
+type userOpts struct {
+	users.CommonOpts
+	Password string `json:"password,omitempty"`
+}
+
+type updateOpts struct {
+	users.CommonOpts
+	Password string `json:"password,omitempty"`
+}
+
 /*
 Creating Server Image
 */
@@ -264,6 +274,35 @@ func ListVolumes(authCredentials OpenstackAuth) ([]volumes.Volume, error) {
 	}
 
 	return result1, nil
+}
+
+/*
+Update Volume
+*/
+func UpdateVolume(authCredentials OpenstackAuth, volumeId string, volumeName string) error {
+	provider, err := auth(authCredentials)
+
+	if err != nil {
+		return err
+	}
+
+	client, err := openstack.NewBlockStorageV2(provider, gophercloud.EndpointOpts{
+		Region: "RegionOne",
+	})
+
+	if err != nil {
+		return err
+	}
+
+	options := volumes.UpdateOpts{Name: &volumeName}
+
+	_, errUpdate := volumes.Update(client, volumeId, options).Extract()
+
+	if errUpdate != nil {
+		return errUpdate
+	}
+
+	return nil
 }
 
 /*
@@ -887,6 +926,95 @@ func ListUsers(authCredentials OpenstackAuth) ([]map[string]interface{}, error) 
 }
 
 /*
+Create User
+*/
+func CreateUser(authCredentials OpenstackAuth, params map[string]interface{}) (*users.User, error) {
+	var _user *users.User
+	provider, errProvider := auth(authCredentials)
+
+	if errProvider != nil {
+		return _user, errProvider
+	}
+
+	client, err1 := openstack.NewIdentityV2(provider, gophercloud.EndpointOpts{
+		Region: "RegionOne",
+	})
+	client.Endpoint = strings.Replace(client.Endpoint, "5000", "35357", 1)
+
+	if err1 != nil {
+		return _user, err1
+	}
+
+	return _user, nil
+
+	optsUser := userOpts{}
+	optsUser.Enabled = gophercloud.Enabled
+	if params["tenantId"] != "" {
+		optsUser.TenantID = fmt.Sprint(params["tenantId"])
+	}
+	if params["email"] != "" {
+		optsUser.Email = fmt.Sprint(params["email"])
+	}
+	if params["name"] != "" {
+		optsUser.Name = fmt.Sprint(params["name"])
+	}
+	if params["password"] != "" {
+		optsUser.Password = "tangoa$%adkasd"
+	}
+
+	_user, err := users.Create(client, optsUser).Extract()
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	return _user, nil
+}
+
+/*
+Create User
+*/
+func UpdateUser(authCredentials OpenstackAuth, params map[string]interface{}, userId string) (*users.User, error) {
+	var _user *users.User
+	provider, errProvider := auth(authCredentials)
+
+	if errProvider != nil {
+		return _user, errProvider
+	}
+
+	client, err1 := openstack.NewIdentityV2(provider, gophercloud.EndpointOpts{
+		Region: "RegionOne",
+	})
+
+	client.Endpoint = strings.Replace(client.Endpoint, "5000", "35357", 1)
+
+	if err1 != nil {
+		return _user, err1
+	}
+
+	optsUser := updateOpts{}
+	optsUser.Enabled = gophercloud.Enabled
+	if params["tenantId"] != "" {
+		optsUser.TenantID = fmt.Sprint(params["tenantId"])
+	}
+	if params["email"] != "" {
+		optsUser.Email = fmt.Sprint(params["email"])
+	}
+	if params["name"] != "" {
+		optsUser.Name = fmt.Sprint(params["name"])
+	}
+	if params["password"] != "" {
+		optsUser.Password = "tangoa$%adkasd"
+	}
+
+	_user, err := users.Update(client, userId, optsUser).Extract()
+	if err != nil {
+		log.Println(err.Error())
+	}
+
+	return _user, nil
+}
+
+/*
 Get List of Tenants
 */
 func ListTenants(authCredentials OpenstackAuth) ([]map[string]interface{}, error) {
@@ -986,4 +1114,18 @@ func ListSecurityRules(authCredentials OpenstackAuth) ([]rules.SecGroupRule, err
 	}
 
 	return result1, nil
+}
+
+func (opts userOpts) ToUserCreateMap() (map[string]interface{}, error) {
+	if opts.Name == "" && opts.Username == "" {
+		err := gophercloud.ErrMissingInput{}
+		err.Argument = "users.CreateOpts.Name/users.CreateOpts.Username"
+		err.Info = "Either a Name or Username must be provided"
+		return nil, err
+	}
+	return gophercloud.BuildRequestBody(opts, "user")
+}
+
+func (opts updateOpts) ToUserUpdateMap() (map[string]interface{}, error) {
+	return gophercloud.BuildRequestBody(opts, "user")
 }
