@@ -3,6 +3,7 @@ package bwdataapi
 import (
 	"bytes"
 	"errors"
+	"log"
 	"net/http"
 
 	validator "github.com/go-playground/validator/v10"
@@ -32,6 +33,10 @@ func (a BWDataApi) PostRequest(request []byte, path string, method string, usern
 	client := &http.Client{}
 
 	reqUrl = a.Url + path
+
+	log.Printf("Create Client: %v\n", string(request))
+	log.Printf("Username: %v\n", username)
+	log.Printf("Password: %v\n", password)
 
 	req, err := http.NewRequest(method, reqUrl, bytes.NewBuffer(request))
 	req.Header.Add("Content-type", "application/json")

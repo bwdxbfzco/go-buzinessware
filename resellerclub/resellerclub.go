@@ -236,6 +236,8 @@ func (u ResellerClub) GetAllDomains(noofrecords string, pageno string) []Domains
 	params := url.Values{}
 	params.Add("no-of-records", noofrecords)
 	params.Add("page-no", pageno)
+	params.Add("show-child-orders", "true")
+	params.Add("order-by", "creationtime desc")
 
 	resp, err := u.apiCall("domains/search.json", params)
 	if err != nil {
@@ -281,6 +283,8 @@ func (u ResellerClub) GetTotalDomainCount() DomainRecords {
 	params := url.Values{}
 	params.Add("no-of-records", "10")
 	params.Add("page-no", "1")
+	params.Add("show-child-orders", "true")
+	params.Add("order-by", "creationtime desc")
 
 	resp, err := u.apiCall("domains/search.json", params)
 	if err != nil {
