@@ -49,12 +49,13 @@ type ResellerClub struct {
 	Billingcontactid     string  `json:"billingcontactid,omitempty"`
 	Admincontactid       string  `json:"admincontactid,omitempty"`
 	Techcontactid        string  `json:"techcontactid,omitempty"`
-	Registrantcontactid  string  `json:"registrantcontactid,omitempty`
+	Registrantcontactid  string  `json:"registrantcontactid,omitempty"`
 	Ns1                  string  `json:"ns1,omitempty"`
 	Ns2                  string  `json:"ns2,omitempty"`
 	Ns3                  string  `json:"ns3,omitempty"`
 	Ns4                  string  `json:"ns4,omitempty"`
 	Customerid           string  `json:"customerid,omitempty"`
+	ExpiryDate           string  `json:"endtime,omitempty"`
 }
 
 type DomainRecords struct {
@@ -87,7 +88,7 @@ func (u ResellerClub) apiCall(actionUrl string, params url.Values) (*http.Respon
 	resp, err := http.Get(url)
 
 	if err != nil {
-		fmt.Print(err.Error())
+		log.Printf("go-buzinessware apiCall(91): %v\n", err.Error())
 	}
 
 	return resp, err
@@ -187,7 +188,7 @@ func (u ResellerClub) ResellerClubApi(_params map[string]string) ResellerClub {
 	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("go-buzinessware ResellerClubApi(191): %v\n", err.Error())
 	}
 
 	var r map[string]interface{}
@@ -197,7 +198,7 @@ func (u ResellerClub) ResellerClubApi(_params map[string]string) ResellerClub {
 		if _params["action"] != "getorder" && _params["action"] != "createcontact" {
 			err = json.Unmarshal(body, &_resellerclubresponse)
 			if err != nil {
-				log.Fatal(err)
+				log.Printf("go-buzinessware ResellerClubApi(200): %v\n", err.Error())
 			}
 		} else if _params["action"] == "getorder" {
 			_resellerclubresponse.Orderid = fmt.Sprintf("%s", body)
@@ -207,7 +208,7 @@ func (u ResellerClub) ResellerClubApi(_params map[string]string) ResellerClub {
 	} else {
 		err = json.Unmarshal(body, &_resellerclubresponse)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("go-buzinessware ResellerClubApi(211): %v\n", err.Error())
 		}
 	}
 
@@ -241,14 +242,14 @@ func (u ResellerClub) GetAllDomains(noofrecords string, pageno string) []Domains
 
 	resp, err := u.apiCall("domains/search.json", params)
 	if err != nil {
-		log.Println(err)
+		log.Printf("go-buzinessware GetAllDomains(247): %v\n", err.Error())
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		log.Println(err)
+		log.Printf("go-buzinessware GetAllDomains(254): %v\n", err.Error())
 	}
 
 	var x2 []Domains
@@ -259,18 +260,42 @@ func (u ResellerClub) GetAllDomains(noofrecords string, pageno string) []Domains
 	for _, b := range r {
 		var x1 Domains
 		if reflect.TypeOf(b).Kind().String() == "map" && reflect.TypeOf(b).Kind().String() != "string" {
-			x1.EntityId = b.(map[string]interface{})["entity.entityid"].(string)
-			x1.OrderId = b.(map[string]interface{})["orders.orderid"].(string)
-			x1.CustomerId = b.(map[string]interface{})["entity.customerid"].(string)
-			x1.ResellerLock = b.(map[string]interface{})["orders.resellerlock"].(string)
-			x1.CustomerLock = b.(map[string]interface{})["orders.customerlock"].(string)
-			x1.DomainName = b.(map[string]interface{})["entity.description"].(string)
-			x1.ExpiryDate = b.(map[string]interface{})["orders.endtime"].(string)
-			x1.PrivacyProtection = b.(map[string]interface{})["orders.privacyprotection"].(string)
-			x1.AutoRenew = b.(map[string]interface{})["orders.autorenew"].(string)
-			x1.Status = b.(map[string]interface{})["entity.currentstatus"].(string)
-			x1.TransferLock = b.(map[string]interface{})["orders.transferlock"].(string)
-			x1.OrderDate = b.(map[string]interface{})["orders.creationdt"].(string)
+			if b.(map[string]interface{})["entity.entityid"] != nil {
+				x1.EntityId = b.(map[string]interface{})["entity.entityid"].(string)
+			}
+			if b.(map[string]interface{})["orders.orderid"] != nil {
+				x1.OrderId = b.(map[string]interface{})["orders.orderid"].(string)
+			}
+			if b.(map[string]interface{})["entity.customerid"] != nil {
+				x1.CustomerId = b.(map[string]interface{})["entity.customerid"].(string)
+			}
+			if b.(map[string]interface{})["orders.resellerlock"] != nil {
+				x1.ResellerLock = b.(map[string]interface{})["orders.resellerlock"].(string)
+			}
+			if b.(map[string]interface{})["orders.customerlock"] != nil {
+				x1.CustomerLock = b.(map[string]interface{})["orders.customerlock"].(string)
+			}
+			if b.(map[string]interface{})["entity.description"] != nil {
+				x1.DomainName = b.(map[string]interface{})["entity.description"].(string)
+			}
+			if b.(map[string]interface{})["orders.endtime"] != nil {
+				x1.ExpiryDate = b.(map[string]interface{})["orders.endtime"].(string)
+			}
+			if b.(map[string]interface{})["orders.privacyprotection"] != nil {
+				x1.PrivacyProtection = b.(map[string]interface{})["orders.privacyprotection"].(string)
+			}
+			if b.(map[string]interface{})["orders.autorenew"] != nil {
+				x1.AutoRenew = b.(map[string]interface{})["orders.autorenew"].(string)
+			}
+			if b.(map[string]interface{})["entity.currentstatus"] != nil {
+				x1.Status = b.(map[string]interface{})["entity.currentstatus"].(string)
+			}
+			if b.(map[string]interface{})["orders.transferlock"] != nil {
+				x1.TransferLock = b.(map[string]interface{})["orders.transferlock"].(string)
+			}
+			if b.(map[string]interface{})["orders.creationdt"] != nil {
+				x1.OrderDate = b.(map[string]interface{})["orders.creationdt"].(string)
+			}
 		}
 		if x1.EntityId != "" {
 			x2 = append(x2, x1)
@@ -288,14 +313,14 @@ func (u ResellerClub) GetTotalDomainCount() DomainRecords {
 
 	resp, err := u.apiCall("domains/search.json", params)
 	if err != nil {
-		log.Println(err)
+		log.Printf("go-buzinessware GetTotalDomainCount(317): %v\n", err.Error())
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		log.Println(err)
+		log.Printf("go-buzinessware GetTotalDomainCount(326): %v\n", err.Error())
 	}
 
 	var record DomainRecords

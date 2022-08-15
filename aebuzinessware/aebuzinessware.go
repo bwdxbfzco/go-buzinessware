@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const liveUrl = "http://ae-epp.apps.ae/index.php?"
+const liveUrl = "https://ae-epp.apps.ae/index.php?"
 const testUrl = "http://ae-epp-test.apps.ae/index.php?"
 
 type AEDomain struct {
@@ -27,33 +27,33 @@ type Response struct {
 }
 
 type DomainResponse struct {
-	Status         string        `json:"status"`          //
-	ExpirationDate time.Time     `json:"expirationDate"`  //
-	AuthInfo       string        `json:"auth_info"`       //
-	Domainname     string        `json:"domainname"`      //
-	CreatedOn      time.Time     `json:"createdOn"`       //
-	LastUpdateOn   time.Time     `json:"lastUpdateOn"`    //
-	Registrant     string        `json:"registrant"`      //
-	ContactInfo    []interface{} `json:"contact_info"`    //
-	NameserverInfo []interface{} `json:"nameserver_info"` //
+	Status         string        `json:"status,omitempty"`          //
+	ExpirationDate time.Time     `json:"expirationDate,omitempty"`  //
+	AuthInfo       string        `json:"auth_info,omitempty"`       //
+	Domainname     string        `json:"domainname,omitempty"`      //
+	CreatedOn      time.Time     `json:"createdOn,omitempty"`       //
+	LastUpdateOn   time.Time     `json:"lastUpdateOn,omitempty"`    //
+	Registrant     string        `json:"registrant,omitempty"`      //
+	ContactInfo    []interface{} `json:"contact_info,omitempty"`    //
+	NameserverInfo []interface{} `json:"nameserver_info,omitempty"` //
 }
 
 type ContactResponse struct {
-	ContactID          string    `json:"ContactId"`
-	ContactEmail       string    `json:"ContactEmail"`
-	ContactClientID    string    `json:"ContactClientId"`
-	ContactCreateDate  time.Time `json:"ContactCreateDate"`
-	ContactUpdateDate  time.Time `json:"ContactUpdateDate"`
-	ContactStatus      []string  `json:"ContactStatus"`
-	ContactVoice       string    `json:"ContactVoice"`
-	ContactFax         string    `json:"ContactFax"`
-	ContactName        string    `json:"ContactName"`
-	ContactStreet      string    `json:"ContactStreet"`
-	ContactCity        string    `json:"ContactCity"`
-	ContactZipcode     string    `json:"ContactZipcode"`
-	ContactProvince    string    `json:"ContactProvince"`
-	ContactCountrycode string    `json:"ContactCountrycode"`
-	ContactCompanyname string    `json:"ContactCompanyname"`
+	ContactID          string    `json:"ContactId,omitempty"`
+	ContactEmail       string    `json:"ContactEmail,omitempty"`
+	ContactClientID    string    `json:"ContactClientId,omitempty"`
+	ContactCreateDate  time.Time `json:"ContactCreateDate,omitempty"`
+	ContactUpdateDate  time.Time `json:"ContactUpdateDate,omitempty"`
+	ContactStatus      []string  `json:"ContactStatus,omitempty"`
+	ContactVoice       string    `json:"ContactVoice,omitempty"`
+	ContactFax         string    `json:"ContactFax,omitempty"`
+	ContactName        string    `json:"ContactName,omitempty"`
+	ContactStreet      string    `json:"ContactStreet,omitempty"`
+	ContactCity        string    `json:"ContactCity,omitempty"`
+	ContactZipcode     string    `json:"ContactZipcode,omitempty"`
+	ContactProvince    string    `json:"ContactProvince,omitempty"`
+	ContactCountrycode string    `json:"ContactCountrycode,omitempty"`
+	ContactCompanyname string    `json:"ContactCompanyname,omitempty"`
 }
 
 type Nameserver struct {

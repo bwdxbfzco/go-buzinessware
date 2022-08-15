@@ -128,7 +128,6 @@ func SibRequest(request []byte, apiKey string, path string, method string) (Send
 
 	t.StatusCode = resp.StatusCode
 
-	log.Println(resp.StatusCode)
 	if resp.StatusCode == 201 || resp.StatusCode == 200 {
 		data := json.NewDecoder(resp.Body)
 		errjson := data.Decode(&t)

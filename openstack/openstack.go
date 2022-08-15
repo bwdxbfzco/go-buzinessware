@@ -306,6 +306,37 @@ func UpdateVolume(authCredentials OpenstackAuth, volumeId string, volumeName str
 }
 
 /*
+Delete Volume
+*/
+func DeleteVolume(authCredentials OpenstackAuth, volumeId string) error {
+	provider, err := auth(authCredentials)
+
+	if err != nil {
+		return err
+	}
+
+	client, err := openstack.NewBlockStorageV2(provider, gophercloud.EndpointOpts{
+		Region: "RegionOne",
+	})
+
+	if err != nil {
+		return err
+	}
+
+	options := &volumes.DeleteOpts{
+		Cascade: true,
+	}
+
+	errDel := volumes.Delete(client, volumeId, options)
+
+	if errDel.Err != nil {
+		return errDel.Err
+	}
+
+	return nil
+}
+
+/*
 List Snapshots
 */
 func ListSnapshots(authCredentials OpenstackAuth) ([]snapshots.Snapshot, error) {
