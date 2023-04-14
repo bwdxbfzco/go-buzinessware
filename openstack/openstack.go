@@ -911,9 +911,15 @@ func NetworkIPAvailability(authCredentials OpenstackAuth, networkId string) (map
 		return result1, err
 	}
 
-	result1["networkID"] = s.NetworkID
-	result1["totalIPs"] = s.TotalIPs
-	result1["usedIPs"] = s.UsedIPs
+	for _, a := range s.SubnetIPAvailabilities {
+		if a.IPVersion == 4 {
+			result := map[string]interface{}{}
+			result["networkID"] = s.NetworkID
+			result["totalIPs"] = a.TotalIPs
+			result["usedIPs"] = a.UsedIPs
+			result1 = result
+		}
+	}
 
 	return result1, nil
 }

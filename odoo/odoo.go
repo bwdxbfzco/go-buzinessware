@@ -18,18 +18,24 @@ type OdooDetails struct {
 }
 
 type InvoiceItems struct {
-	ProductID        int     `json:"product_id" validate:"required"`         //
-	Name             string  `json:"name" validate:"required"`               //
-	PriceUnit        float64 `json:"price_unit" validate:"required"`         //
-	PriceSubtotal    float64 `json:"price_subtotal" validate:"required"`     //
-	PriceTotal       float64 `json:"price_total" validate:"required"`        //
-	TermName         string  `json:"term_name" validate:"required"`          //
-	DateStartingg    string  `json:"date_startingg" validate:"required"`     //
-	DateEndingg      string  `json:"date_endingg"`                           //
-	TaxIds           []int   `json:"tax_ids,omitempty"`                      //
-	OrderTypee       string  `json:"order_typee" validate:"required"`        //
-	ProductGroupName int     `json:"product_group_name" validate:"required"` //
-	BusinessUnit     string  `json:"business_unit" validate:"required"`      //
+	ProductID        int     `json:"product_id" validate:"required"`               //
+	Name             string  `json:"name" validate:"required"`                     //
+	PriceUnit        float64 `json:"price_unit" validate:"required"`               //
+	PriceSubtotal    float64 `json:"price_subtotal" validate:"required"`           //
+	PriceTotal       float64 `json:"price_total" validate:"required"`              //
+	TermName         string  `json:"term_name" validate:"required"`                //
+	DateStartingg    string  `json:"date_startingg,omitempty" validate:"required"` //
+	DateEndingg      string  `json:"date_endingg,omitempty"`                       //
+	TaxIds           []int   `json:"tax_ids,omitempty"`                            //
+	OrderTypee       string  `json:"order_typee" validate:"required"`              //
+	ProductGroupName int     `json:"product_group_name" validate:"required"`       //
+	BusinessUnit     string  `json:"business_unit" validate:"required"`            //
+	ProductCategory  string  `json:"product_category" validate:"required"`         //
+	RevenueType      string  `json:"revenue_type" validate:"required"`             //
+	Vendor           string  `json:"vendor_idd,omitempty"`                         //
+	Region           string  `json:"region_id,omitempty"`                          //
+	AccountId        int     `json:"account_id"`                                   //
+	Country          int     `json:"client_country,omitempty"`                     //
 }
 
 type Invoice struct {
@@ -71,9 +77,12 @@ type OdooResponse struct {
 	ResponseCode int    `json:"responseCode,omitempty"`
 	CreateID     int    `json:"create_id,omitempty"`
 	Data         []struct {
-		ID    int    `json:"id,omitempty"`    //
-		Name  string `json:"name,omitempty"`  //
-		State string `json:"state,omitempty"` //
+		ID            int    `json:"id,omitempty"`    //
+		Name          string `json:"name,omitempty"`  //
+		State         string `json:"state,omitempty"` //
+		ProductTmplID []struct {
+			Name string `json:"name"`
+		} `json:"product_tmpl_id"`
 	} `json:"data,omitempty"`
 }
 
@@ -85,6 +94,7 @@ type Contact struct {
 	EmailNormalized string `json:"email_normalized"`                              //
 	Email           string `json:"email" validate:"required"`                     //
 	CustomerType    string `json:"x_studio_customer_segment" validate:"required"` //
+	Country         int    `json:"country_id"`                                    //
 }
 
 func Search(object string, field string, search string, filter string, odooDetails *OdooDetails) (OdooResponse, error) {

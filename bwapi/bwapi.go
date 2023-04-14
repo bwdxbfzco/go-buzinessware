@@ -3,12 +3,13 @@ package bwapi
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"net/http"
 
 	validator "github.com/go-playground/validator/v10"
 )
 
-var reqUrl = "http://bwapi.buzinessware.com:9003"
+var reqUrl = "http://bwapi.buzinessware.com:9001"
 
 type BWApi struct {
 	Url string `json:"url"`
@@ -42,6 +43,8 @@ func (a BWApi) PostRequest(request []byte, path string, method string, username 
 	client := &http.Client{}
 
 	reqUrl = a.Url + path
+
+	fmt.Println(reqUrl + " " + method)
 
 	req, err := http.NewRequest(method, reqUrl, bytes.NewBuffer(request))
 	req.Header.Add("Content-type", "application/json")
