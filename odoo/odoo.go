@@ -72,18 +72,11 @@ type Odoocreatecontact struct {
 }
 
 type OdooResponse struct {
-	Success      bool   `json:"success,omitempty"`
-	Message      string `json:"message,omitempty"`
-	ResponseCode int    `json:"responseCode,omitempty"`
-	CreateID     int    `json:"create_id,omitempty"`
-	Data         []struct {
-		ID            int    `json:"id,omitempty"`    //
-		Name          string `json:"name,omitempty"`  //
-		State         string `json:"state,omitempty"` //
-		ProductTmplID []struct {
-			Name string `json:"name"`
-		} `json:"product_tmpl_id"`
-	} `json:"data,omitempty"`
+	Success      bool                     `json:"success,omitempty"`
+	Message      string                   `json:"message,omitempty"`
+	ResponseCode int                      `json:"responseCode,omitempty"`
+	CreateID     int                      `json:"create_id,omitempty"`
+	Data         []map[string]interface{} `json:"data,omitempty"`
 }
 
 type Contact struct {
@@ -107,6 +100,9 @@ func Search(object string, field string, search string, filter string, odooDetai
 			filter = "ilike"
 		}
 		params.Add("domain", `[["`+field+`", "`+filter+`", "`+search+`"]]`)
+		a = params.Encode()
+	} else {
+		params.Add("domain", search)
 		a = params.Encode()
 	}
 
