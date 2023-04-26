@@ -37,10 +37,48 @@ func (a BWNotification) Publish(params NotificationParams) error {
 				return errors.New("subject is missing")
 			}
 		}
+
+		if len(params.EmailData.Recipient) == 0 {
+			return errors.New("recipient is missing")
+		}
 	}
 
 	if params.Action == "sms" {
+		err := validate.Var(params.APPData.PartnerId, "required")
 
+		if err != nil {
+			return errors.New("partner id is missing")
+		}
+
+		if len(params.SMSData.Recipient) == 0 {
+			return errors.New("recipient is missing")
+		}
+	}
+
+	if params.Action == "app" {
+		err := validate.Var(params.APPData.PartnerId, "required")
+
+		if err != nil {
+			return errors.New("partner id is missing")
+		}
+
+		if !params.APPData.IsTemplate {
+			err = validate.Var(params.APPData.Content, "required")
+
+			if err != nil {
+				return errors.New("content is missing")
+			}
+
+			err = validate.Var(params.APPData.Subject, "required")
+
+			if err != nil {
+				return errors.New("subject is missing")
+			}
+		}
+
+		if params.Provider == "slack" && params.APPData.ChannelId == "" {
+			return errors.New("channel is missing")
+		}
 	}
 
 	marshalData, _ := json.Marshal(params)
@@ -67,6 +105,7 @@ type NotificationParams struct {
 	Provider  string    `json:"provider,omitempty"` //
 	EmailData EMailData `json:"data,omitempty"`     //
 	SMSData   SMSData   `json:"sms_data,omitempty"` //
+	APPData   APPData   `json:"app_data,omitempty"` //
 }
 
 type EmailContact struct {
@@ -87,7 +126,7 @@ type EMailData struct {
 	TemplateId       string                 `json:"templateId,omitempty"`       //
 	PartnerId        string                 `json:"partnerId,omitempty"`        //
 	SettingsId       int                    `json:"settingsId,omitempty"`       //
-	ClientId         int                    `json:"clientId"`                   //
+	ClientId         int                    `json:"clientId,omitempty"`         //
 	Params           map[string]interface{} `json:"params,omitempty"`           //
 	Attachment       struct {
 		Content string `json:"content,omitempty"` //
@@ -102,10 +141,20 @@ type SMSContact struct {
 
 type SMSData struct {
 	Recipient  []SMSContact           `json:"recipient,omitempty"`  //
-	Content    string                 `json:",omitempty"`           //
+	Content    string                 `json:"content,omitempty"`    //
 	PartnerId  string                 `json:"partnerId,omitempty"`  //
 	IsTemplate bool                   `json:"isTemplate,omitempty"` //
 	TemplateId string                 `json:"templateId,omitempty"` //
-	ClientId   int                    `json:"clientId"`             //
+	ClientId   int                    `json:"clientId,omitempty"`   //
+	Params     map[string]interface{} `json:"params,omitempty"`     //
+}
+
+type APPData struct {
+	ChannelId  string                 `json:"channelId,omitempty"`  //
+	Subject    string                 `json:"subject,omitempty"`    //
+	Content    string                 `json:"content,omitempty"`    //
+	PartnerId  string                 `json:"partnerId,omitempty"`  //
+	IsTemplate bool                   `json:"isTemplate,omitempty"` //
+	TemplateId string                 `json:"templateId,omitempty"` //
 	Params     map[string]interface{} `json:"params,omitempty"`     //
 }

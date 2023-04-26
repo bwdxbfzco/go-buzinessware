@@ -1,8 +1,7 @@
 package twiliosms
 
 import (
-	"fmt"
-
+	twilio "github.com/twilio/twilio-go"
 	openapi "github.com/twilio/twilio-go/rest/api/v2010"
 )
 
@@ -31,10 +30,9 @@ func (f TwilioSMS) SendSMS() interface{} {
 
 	resp, err := client.Api.CreateMessage(params)
 	if err != nil {
-		fmt.Println(err.Error())
 		err = nil
 	} else {
-		fmt.Println("Message Sid: " + *resp.Sid)
+		s = map[string]interface{}{"sid": *resp.Sid}
 	}
 	return s
 }
