@@ -1,7 +1,9 @@
 package resellerclub
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -25,7 +27,7 @@ type Contact struct {
 	State      string `json:"state,omitempty"`      //
 	Type       string `json:"type"`                 //
 	Contactid  string `json:"contactid,omitempty"`  //
-	Telnocc    string `json:"telnocc,omitempty"`    //
+	Telnocc    string `json:"telnocc,omitempty"`    //-
 	Customerid string `json:"customerid,omitempty"` //
 }
 
@@ -178,6 +180,24 @@ func (u ResellerClub) ResellerClubApi(_params map[string]string) ResellerClub {
 		a = params.Encode()
 	}
 
+	if _params["action"] == "suspendorder" {
+		params.Add("order-id", _params["order-id"])
+		params.Add("reason", _params["reason"])
+		a = params.Encode()
+	}
+
+	if _params["action"] == "resumeorder" {
+		params.Add("order-id", _params["order-id"])
+		a = params.Encode()
+	}
+
+	if _params["action"] == "reneworder" {
+		params.Add("order-id", _params["order-id"])
+		params.Add("months", _params["months"])
+		params.Add("invoice-option", "NoInvoice")
+		a = params.Encode()
+	}
+
 	resp, err := u.apiCall(_params["actionUrl"], params)
 
 	if err != nil {
@@ -213,6 +233,41 @@ func (u ResellerClub) ResellerClubApi(_params map[string]string) ResellerClub {
 	}
 
 	return _resellerclubresponse
+}
+
+func (u ResellerClub) ResellerClubApiPost(actionUrl string, params url.Values) ResellerClub {
+	var result ResellerClub
+	params.Add("auth-userid", u.ResellerClubUser)
+	params.Add("api-key", u.ResellerClubPassword)
+	a := params.Encode()
+
+	reqUrl := u.ResellerClucUrl + actionUrl + "?" + a
+
+	method := "POST"
+	var request []byte
+
+	client := &http.Client{}
+	req, err := http.NewRequest(method, reqUrl, bytes.NewBuffer(request))
+	req.Header.Add("Content-type", "application/json")
+	req.Header.Add("Accept", "application/json")
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		fmt.Print(err.Error())
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if resp.StatusCode == 200 {
+		err = json.Unmarshal(body, &result)
+		if err != nil {
+			log.Printf("%+v", err)
+		}
+	}
+
+	return result
 }
 
 func (u ResellerClub) DomainDetails(domain string, orderType string) ResellerClub {
@@ -327,4 +382,50 @@ func (u ResellerClub) GetTotalDomainCount() DomainRecords {
 	json.Unmarshal(body, &record)
 
 	return record
+}
+
+func (u ResellerClub) SuspendService(orderId int, reason string) (string, error) {
+	_params := url.Values{}
+	_params.Add("order-id", strconv.Itoa(orderId))
+	_params.Add("reason", reason)
+
+	result := u.ResellerClubApiPost("orders/suspend.json", _params)
+
+	if result.Status == "ERROR" {
+		return result.Status, errors.New(result.Message)
+	}
+
+	return result.Status, nil
+}
+
+func (u ResellerClub) ResumeService(orderId int) (string, error) {
+	_params := url.Values{}
+	_params.Add("order-id", strconv.Itoa(orderId))
+
+	result := u.ResellerClubApiPost("orders/unsuspend.json", _params)
+
+	if result.Status == "ERROR" {
+		return result.Status, errors.New(result.Message)
+	}
+
+	return result.Status, nil
+}
+
+func (u ResellerClub) RenewService(orderId int, duration int, service string) (string, error) {
+	var result ResellerClub
+
+	if service == "gsuite" {
+
+		_params := url.Values{}
+		_params.Add("order-id", strconv.Itoa(orderId))
+		_params.Add("month", strconv.Itoa(duration))
+
+		result = u.ResellerClubApiPost("gapps/gbl/renew.json", _params)
+
+		if result.Status == "ERROR" {
+			return result.Status, errors.New(result.Message)
+		}
+		return result.Status, nil
+	}
+	return "", errors.New("no service details provided")
 }
