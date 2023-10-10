@@ -3,7 +3,6 @@ package aebuzinessware
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -218,7 +217,6 @@ func (c AEDomain) UpdateDomain(contactId string, domainName string, contactType 
 	params.Set("domain", domainName)
 	params.Set("data", string(_contact))
 
-	log.Printf("%s", params)
 	result, err := c.apiCall(params, "updatedomain")
 	return result, err
 }
@@ -280,7 +278,6 @@ func (c AEDomain) apiCall(request url.Values, action string) (Response, error) {
 				return _response, errjson
 			}
 			_response.Status = "success"
-			log.Printf("%s", r)
 		} else if action == "checkcontactbyemail" {
 			var r interface{}
 			errjson := data.Decode(&r)

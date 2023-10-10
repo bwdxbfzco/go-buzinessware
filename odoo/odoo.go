@@ -2,11 +2,14 @@ package odoo
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
+	"time"
 
 	conv "github.com/cstockton/go-conv"
 	validator "github.com/go-playground/validator/v10"
@@ -60,6 +63,7 @@ type Invoice struct {
 	AmountResidualSigned      float64        `json:"amount_residual_signed,omitempty"`                 //
 	ExtractState              string         `json:"extract_state,omitempty"`                          //
 	State                     string         `json:"state,omitempty"`                                  //
+	Ref                       string         `json:"ref,omitempty"`                                    //
 }
 
 type ModelOdoo struct {
@@ -113,14 +117,48 @@ func Search(object string, field string, search string, filter string, odooDetai
 	return odooApiCall(values, reqUrl, method, odooDetails)
 }
 
+func ReportSearch(object string, search []interface{}, odooDetails *OdooDetails) (OdooResponse, error) {
+	values := []byte(`{}`)
+	params := url.Values{}
+	var a string
+	var searchFilter string
+	var filter []string
+
+	if len(search) > 0 {
+		for x, _ := range search {
+			filter = append(filter, search[x].(string))
+		}
+	}
+	searchFilter = strings.Join(filter, ",")
+	searchFilter = "[" + searchFilter + "]"
+	params.Add("domain", searchFilter)
+
+	a = params.Encode()
+
+	reqUrl := odooDetails.OdooUrl + "/" + object + "/search?" + a
+
+	method := "GET"
+
+	return odooApiCall(values, reqUrl, method, odooDetails)
+}
+
 func odooApiCall(request []byte, reqUrl string, method string, odooDetails *OdooDetails) (OdooResponse, error) {
 	var t OdooResponse
-	client := &http.Client{}
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+
+	client := &http.Client{
+		Timeout:   300 * time.Second,
+		Transport: tr,
+	}
 
 	log.Printf("%s", request)
 	req, err := http.NewRequest(method, reqUrl, bytes.NewBuffer(request))
 	if method == "GET" {
 		req, err = http.NewRequest(method, reqUrl, nil)
+		req.Header.Add("Content-Type", "multipart/form-data")
 		if err != nil {
 			return t, err
 		}

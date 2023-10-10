@@ -116,7 +116,14 @@ func DeleteServerSnapshot(authCredential OpenstackAuth, snapShotId string) error
 	if err != nil {
 		return errors.New("Schedule Id missing.")
 	}
+
+	if authCredential.Username == "" || authCredential.Password == "" {
+		return errors.New("credentials missing")
+	}
+
+	fmt.Printf("DeleteServerSnapshot(120): %+v\n", authCredential)
 	provider, err := auth(authCredential)
+
 	client, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
 		Region: "RegionOne",
 	})
@@ -159,6 +166,10 @@ func ListServerSnapshotDetails(authCredential OpenstackAuth, snapShotId string) 
 
 	if err != nil {
 		return result, errors.New("Snapshot Id missing.")
+	}
+
+	if authCredential.Username == "" || authCredential.Password == "" {
+		return result, errors.New("credentials missing")
 	}
 
 	provider, err := auth(authCredential)
@@ -225,6 +236,11 @@ func DeleteVolumeSnapshot(authCredential OpenstackAuth, snapShotId string) error
 	if err != nil {
 		return errors.New("SnapShot Id missing.")
 	}
+
+	if authCredential.Username == "" || authCredential.Password == "" {
+		return errors.New("credentials missing")
+	}
+
 	provider, err := auth(authCredential)
 	client, err := openstack.NewBlockStorageV2(provider, gophercloud.EndpointOpts{
 		Region: "RegionOne",
@@ -673,6 +689,11 @@ func CreateServerFromImage(authCredentials OpenstackAuth, region string, params 
 Delete Server
 */
 func DeleteServer(authCredentials OpenstackAuth, id string) error {
+
+	if authCredentials.Username == "" || authCredentials.Password == "" {
+		return errors.New("credentials missing")
+	}
+
 	provider, _ := auth(authCredentials)
 	client, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
 		Region: "RegionOne",
